@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">WeatherApp</string>
+    <string name="city">City</string>
+    <string name="search">search</string>
+    <string name="c">c</string>
+    <string name="f">f</string>
+    <string name="description">description</string>
+    <string name="degree">degree</string>
+    <string name="units">ºC | ºF</string>
+    <string name="feels_like">feels like</string>
+    <string name="pressure">pressure</string>
+    <string name="fahrenheit"> ºF - Fahrenheit degree</string>
+    <string name="Celsius">ºC - Celsius degree</string>
+
+
+
 </resources>

@@ -4,23 +4,26 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/constraintlayout"
     tools:context=".MainActivity">
 
     <EditText
-        android:id="@+id/search_tv"
+        android:id="@+id/search_et"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
-        android:ems="10"
         android:autofillHints="city name"
-        android:hint="search"
+        android:ems="10"
+        android:fontFamily="monospace"
+        android:hint="@string/search"
         android:inputType="textPersonName"
         app:layout_constraintBottom_toBottomOf="@+id/search_btn"
         app:layout_constraintEnd_toStartOf="@+id/search_btn"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        />
 
     <Button
         android:id="@+id/search_btn"
@@ -29,7 +32,8 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginRight="16dp"
-        android:text="Search"
+        android:fontFamily="monospace"
+        android:text="@string/search"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -39,12 +43,12 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:fontFamily="monospace"
-        android:text="degree"
+        android:text="@string/degree"
         android:textColor="#050505"
         android:textSize="30sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="@+id/search_tv"
-        app:layout_constraintTop_toBottomOf="@+id/search_tv" />
+        app:layout_constraintStart_toStartOf="@+id/search_et"
+        app:layout_constraintTop_toBottomOf="@+id/search_et" />
 
     <TextView
         android:id="@+id/unit_tv"
@@ -53,7 +57,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
         android:fontFamily="monospace"
-        android:text="ºC | ºF"
+        android:text="@string/units"
         app:layout_constraintStart_toEndOf="@+id/degreeTV"
         app:layout_constraintTop_toTopOf="@+id/degreeTV" />
 
@@ -63,9 +67,57 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:fontFamily="monospace"
-        android:text="desciption"
+        android:text="@string/description"
         android:textSize="30sp"
         app:layout_constraintStart_toStartOf="@+id/degreeTV"
         app:layout_constraintTop_toBottomOf="@+id/degreeTV" />
+
+    <TextView
+        android:id="@+id/feels_like_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:fontFamily="monospace"
+        android:text="@string/feels_like"
+        app:layout_constraintStart_toStartOf="@+id/description_tv"
+        app:layout_constraintTop_toBottomOf="@+id/description_tv" />
+
+    <TextView
+        android:id="@+id/feels_like_value_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace"
+        android:text="0"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="@+id/feels_like_tv"
+        app:layout_constraintTop_toBottomOf="@+id/feels_like_tv" />
+
+    <TextView
+        android:id="@+id/pressure_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginLeft="32dp"
+        android:layout_marginTop="32dp"
+        android:fontFamily="monospace"
+        android:text="@string/pressure"
+        app:layout_constraintStart_toEndOf="@+id/feels_like_tv"
+        app:layout_constraintTop_toBottomOf="@+id/description_tv" />
+
+    <TextView
+        android:id="@+id/pressure_value_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace"
+        android:text="0"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="@+id/pressure_tv"
+        app:layout_constraintTop_toBottomOf="@+id/pressure_tv" />
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
