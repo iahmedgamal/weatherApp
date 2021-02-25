@@ -2,14 +2,12 @@ package com.musalaSoft.weatherApp.ui
 
 import Base
 import android.Manifest
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +21,10 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
+import com.google.android.gms.tasks.Task
 import com.google.android.material.snackbar.Snackbar
 import com.musalaSoft.weatherApp.R
 import com.musalaSoft.weatherApp.databinding.ActivityMainBinding
@@ -35,8 +37,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: MainViewModel
     private lateinit var locationViewModel: LocationViewModel
 
-    // If the user denied a previous permission request, but didn't check "Don't ask again", this
-    // Snackbar provides an explanation for why user should approve, i.e., the additional rationale.
     private val fineLocationRationalSnackbar by lazy {
         Snackbar.make(
                 binding.constraintlayout,
@@ -46,12 +46,11 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 requestPermissions(
                         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                        ConstantsUrls.REQUEST_FINE_LOCATION_PERMISSIONS_REQUEST_CODE
+                        Constants.REQUEST_FINE_LOCATION_PERMISSIONS_REQUEST_CODE
                 )
             }
         }
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,57 +62,47 @@ class MainActivity : AppCompatActivity() {
         viewModel.getWeatherSuccessResponse.observe(this, Observer<Base> { weatherData ->
             // Update the UI from MainViewModel
             if (weatherData != null) {
-                Log.d("ss", weatherData.toString())
                 degreeTV.text = weatherData.main.temp.toString()
                 MySharedPreferences.setLastResponse(weatherData.name)
                 degreeTV.text = weatherData.main.temp.toString()
                 description_tv.text = weatherData.weather[0].description
                 feels_like_value_tv.text = weatherData.main.feels_like.toString()
                 pressure_value_tv.text = weatherData.main.pressure.toString()
-
                 search_et.setText(weatherData.name.toString())
             }
         })
 
         viewModel.getWeatherFailResponse.observe(this, Observer<String> {
-            if(it !=null)
-            Snackbar.make(
-                    binding.constraintlayout,
-                    it,
-                    Snackbar.LENGTH_LONG
-            )
-                    .show()
+            if (it != null)
+                Snackbar.make(
+                        binding.constraintlayout,
+                        it,
+                        Snackbar.LENGTH_LONG
+                )
+                        .show()
         })
 
         locationViewModel = ViewModelProvider(this).get(LocationViewModel::class.java)
         locationViewModel.getLocationResponse.observe(this, Observer<Location> { location ->
             // Update the UI from MainViewModel
             if (location != null) {
-                Log.d("ss1", location.toString())
-                Log.d("ss1", location.latitude.toString())
-                Log.d("ss1", location.longitude.toString())
-
-                if(NetworkUtil.isNetworkAvailable(this)){
+                if (NetworkUtil.isNetworkAvailable(this)) {
                     viewModel.getWeatherData(null, MySharedPreferences.getDegree().toString(), location.latitude, location.longitude)
                 }
-
-
             }
         })
 
         setSharedPreferences()
-        initSharedPrefrences()
 
-        // search button click
         search_btn.setOnClickListener() {
             val city = search_et.text.toString()
             val searchValue: String = search_et.text.toString()
             if (!TextUtils.isEmpty(searchValue)) {
                 // get weather data from MainViewModel
-                if(NetworkUtil.isNetworkAvailable(this)){
+                if (NetworkUtil.isNetworkAvailable(this)) {
                     viewModel.getWeatherData(city, MySharedPreferences.getDegree().toString(), null, null)
 
-                }else{
+                } else {
                     Snackbar.make(
                             binding.constraintlayout,
                             "check internet connection",
@@ -157,7 +146,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun setSharedPreferences() {
-        Log.d("init", "init SharedPreferences")
         MySharedPreferences.setContext(getApplicationContext())
         if (Build.VERSION.SDK_INT >= 24) {
             try {
@@ -168,13 +156,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    private fun initSharedPrefrences() {
-        if (MySharedPreferences.getDegree().toString() != "") {
-            var city = MySharedPreferences.getLastResponse().toString()
-        }
-    }
-
 
     override fun onStop() {
         super.onStop()
@@ -189,13 +170,11 @@ class MainActivity : AppCompatActivity() {
                 applicationContext.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
 
         if (permissionApproved) {
-           locationViewModel.getLocation()
+            locationViewModel.getLocation()
             viewModel
             //check if user's GPS is opened
             locationEnabled()
         }
-
-
     }
 
     override fun onRequestPermissionsResult(
@@ -203,22 +182,17 @@ class MainActivity : AppCompatActivity() {
             permissions: Array<String>,
             grantResults: IntArray
     ) {
-        Log.d(ConstantsUrls.TAG, "onRequestPermissionResult()")
+        Log.d(Constants.TAG, "onRequestPermissionResult()")
 
-        if (requestCode == ConstantsUrls.REQUEST_FINE_LOCATION_PERMISSIONS_REQUEST_CODE) {
+        if (requestCode == Constants.REQUEST_FINE_LOCATION_PERMISSIONS_REQUEST_CODE) {
             when {
                 grantResults.isEmpty() ->
                     // If user interaction was interrupted, the permission request
                     // is cancelled and you receive an empty array.
-                    Log.d(ConstantsUrls.TAG, "User interaction was cancelled.")
+                    Log.d(Constants.TAG, "User interaction was cancelled.")
 
                 grantResults[0] == PackageManager.PERMISSION_GRANTED ->
-                    Snackbar.make(
-                            binding.constraintlayout,
-                            R.string.permission_approved_explanation,
-                            Snackbar.LENGTH_LONG
-                    )
-                            .show()
+                    locationEnabled()
 
                 else -> {
                     Snackbar.make(
@@ -246,29 +220,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun locationRequestOnClick(view: View) {
-        Log.d(ConstantsUrls.TAG, "locationRequestOnClick()")
-
         val permissionApproved =
                 applicationContext.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-
         if (permissionApproved) {
             locationViewModel.getLocation()
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 requestPermissionWithRationale(
                         Manifest.permission.ACCESS_FINE_LOCATION,
-                        ConstantsUrls.REQUEST_FINE_LOCATION_PERMISSIONS_REQUEST_CODE,
+                        Constants.REQUEST_FINE_LOCATION_PERMISSIONS_REQUEST_CODE,
                         fineLocationRationalSnackbar
                 )
             }
         }
     }
 
-
-
-
     private fun locationEnabled() {
-        Log.d("test2", "ss")
         val lm: LocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         var gps_enabled = false
         var network_enabled = false
@@ -283,13 +250,45 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
         if (!gps_enabled && !network_enabled) {
-            AlertDialog.Builder(this@MainActivity)
-                    .setMessage("GPS Enable")
-                    .setPositiveButton("Settings") { dialog, which -> startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)); }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+
+            settingsRequest()
         }
     }
 
+    // open google maps location dialog
+    private fun settingsRequest() {
+        val mLocationRequest = LocationRequest()
+        mLocationRequest.interval = 10
+        mLocationRequest.smallestDisplacement = 10f
+        mLocationRequest.fastestInterval = 10
+        mLocationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        val builder = LocationSettingsRequest.Builder()
+        builder.addLocationRequest(mLocationRequest)
 
+        val task: Task<LocationSettingsResponse> = LocationServices.getSettingsClient(this).checkLocationSettings(builder.build())
+        task.addOnCompleteListener { task ->
+            try {
+                val response = task.getResult(ApiException::class.java)
+
+            } catch (exception: ApiException) {
+                when (exception.statusCode) {
+                    LocationSettingsStatusCodes.RESOLUTION_REQUIRED ->
+                        try {
+                            val resolvable: ResolvableApiException = exception as ResolvableApiException
+                            // Show the dialog by calling startResolutionForResult(),
+                            // and check the result in onActivityResult().
+                            resolvable.startResolutionForResult(
+                                    this@MainActivity,
+                                    101)
+                        } catch (e: IntentSender.SendIntentException) {
+                            // Ignore the error.
+                        } catch (e: ClassCastException) {
+                            // Ignore, should be an impossible error.
+                        }
+                    LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> {
+                    }
+                }
+            }
+        }
+    }
 }

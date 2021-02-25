@@ -9,7 +9,6 @@ class MySharedPreferences {
         private val mySharedPreferenceName = "weatherSharedPreference"
         private val PREFERENCE_KEY_DEGREE = "degree"
         private val PREFERENCE_KEY_LAST_RESPONSE = "response"
-
         private var mAppContext: Context? = null
 
 
@@ -17,9 +16,6 @@ class MySharedPreferences {
             mAppContext = context
         }
 
-        fun check(): Context? {
-            return mAppContext
-        }
 
         private fun getSharedPreferences(): SharedPreferences? {
             return mAppContext?.getSharedPreferences(

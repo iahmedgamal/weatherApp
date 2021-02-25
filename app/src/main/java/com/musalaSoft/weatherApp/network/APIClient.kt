@@ -1,6 +1,6 @@
 package com.musalaSoft.weatherApp.network
 
-import com.musalaSoft.weatherApp.helpers.ConstantsUrls
+import com.musalaSoft.weatherApp.helpers.Constants
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -10,7 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory
             get() {
                 if (retrofit == null) {
                     retrofit = Retrofit.Builder()
-                        .baseUrl(ConstantsUrls.BASE_URL)
+                        .baseUrl(Constants.BASE_URL)
                         .addConverterFactory(GsonConverterFactory.create())
                         .build()
                 }
@@ -18,6 +18,3 @@ import retrofit2.converter.gson.GsonConverterFactory
             }
     }
 
-
-//TODO use Interceptor for api-key
-//.addQueryParameter("apikey", "your-actual-api-key")
