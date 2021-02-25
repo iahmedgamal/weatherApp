@@ -16,8 +16,8 @@ interface APIInterface {
     @Query("q") city: String?,
     @Query("appid") appid: String,
     @Query("units") units: String,
-    @Query("lat") lat: String?,
-    @Query("lon") lon: String?
+    @Query("lat") lat: Double?,
+    @Query("lon") lon: Double?
 
 
   ): Call<Base>

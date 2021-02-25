@@ -4,9 +4,11 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 
 /**
@@ -36,4 +38,7 @@ fun Activity.requestPermissionWithRationale(
     } else {
         requestPermissions(arrayOf(permission), requestCode)
     }
+
+
+
 }

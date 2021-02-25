@@ -2,19 +2,20 @@ package com.musalaSoft.weatherApp.ui
 
 import Base
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.provider.Settings
+import android.text.TextUtils
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -22,32 +23,17 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.CancellationTokenSource
-import com.google.android.gms.tasks.Task
 import com.google.android.material.snackbar.Snackbar
 import com.musalaSoft.weatherApp.R
 import com.musalaSoft.weatherApp.databinding.ActivityMainBinding
-import com.musalaSoft.weatherApp.helpers.ConstantsUrls
-import com.musalaSoft.weatherApp.helpers.MySharedPreferences
-import com.musalaSoft.weatherApp.helpers.hasPermission
-import com.musalaSoft.weatherApp.helpers.requestPermissionWithRationale
+import com.musalaSoft.weatherApp.helpers.*
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: com.musalaSoft.weatherApp.databinding.ActivityMainBinding
     private lateinit var viewModel: MainViewModel
-
-    // The Fused Location Provider provides access to location APIs.
-    private val fusedLocationClient: FusedLocationProviderClient by lazy {
-        LocationServices.getFusedLocationProviderClient(applicationContext)
-    }
-
-    // Allows class to cancel the location request if it exits the activity.
-    private var cancellationTokenSource = CancellationTokenSource()
+    private lateinit var locationViewModel: LocationViewModel
 
     // If the user denied a previous permission request, but didn't check "Don't ask again", this
     // Snackbar provides an explanation for why user should approve, i.e., the additional rationale.
@@ -89,14 +75,55 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        viewModel.getWeatherFailResponse.observe(this, Observer<String> {
+            if(it !=null)
+            Snackbar.make(
+                    binding.constraintlayout,
+                    it,
+                    Snackbar.LENGTH_LONG
+            )
+                    .show()
+        })
+
+        locationViewModel = ViewModelProvider(this).get(LocationViewModel::class.java)
+        locationViewModel.getLocationResponse.observe(this, Observer<Location> { location ->
+            // Update the UI from MainViewModel
+            if (location != null) {
+                Log.d("ss1", location.toString())
+                Log.d("ss1", location.latitude.toString())
+                Log.d("ss1", location.longitude.toString())
+
+                if(NetworkUtil.isNetworkAvailable(this)){
+                    viewModel.getWeatherData(null, MySharedPreferences.getDegree().toString(), location.latitude, location.longitude)
+                }
+
+
+            }
+        })
+
         setSharedPreferences()
         initSharedPrefrences()
 
         // search button click
         search_btn.setOnClickListener() {
             val city = search_et.text.toString()
-            // get weather data from MainViewModel
-            viewModel.getWeatherData(city, MySharedPreferences.getDegree().toString(), null, null)
+            val searchValue: String = search_et.text.toString()
+            if (!TextUtils.isEmpty(searchValue)) {
+                // get weather data from MainViewModel
+                if(NetworkUtil.isNetworkAvailable(this)){
+                    viewModel.getWeatherData(city, MySharedPreferences.getDegree().toString(), null, null)
+
+                }else{
+                    Snackbar.make(
+                            binding.constraintlayout,
+                            "check internet connection",
+                            Snackbar.LENGTH_LONG
+                    )
+                            .show()
+                }
+            } else {
+                search_et.setError("Input required")
+            }
         }
         locationRequestOnClick(view)
 
@@ -152,7 +179,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         // Cancels location request (if in flight).
-        cancellationTokenSource.cancel()
+        locationViewModel.cancellationTokenSource.cancel()
     }
 
 
@@ -162,8 +189,8 @@ class MainActivity : AppCompatActivity() {
                 applicationContext.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
 
         if (permissionApproved) {
-            requestCurrentLocation()
-
+           locationViewModel.getLocation()
+            viewModel
             //check if user's GPS is opened
             locationEnabled()
         }
@@ -225,7 +252,7 @@ class MainActivity : AppCompatActivity() {
                 applicationContext.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
 
         if (permissionApproved) {
-            requestCurrentLocation()
+            locationViewModel.getLocation()
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 requestPermissionWithRationale(
@@ -238,40 +265,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    @SuppressLint("MissingPermission")
-    private fun requestCurrentLocation() {
-        Log.d(ConstantsUrls.TAG, "requestCurrentLocation()")
-        if (applicationContext.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
 
-            // Returns a single current location fix on the device. Unlike getLastLocation() that
-            // returns a cached location, this method could cause active location computation on the
-            // device. A single fresh location will be returned if the device location can be
-            // determined within reasonable time (tens of seconds), otherwise null will be returned.
-            //
-            // Both arguments are required.
-            // PRIORITY type is self-explanatory. (Other options are PRIORITY_BALANCED_POWER_ACCURACY,
-            // PRIORITY_LOW_POWER, and PRIORITY_NO_POWER.)
-            // The second parameter, [CancellationToken] allows the activity to cancel the request
-            // before completion.
-            val currentLocationTask: Task<Location> = fusedLocationClient.getCurrentLocation(
-                    PRIORITY_HIGH_ACCURACY,
-                    cancellationTokenSource.token
-            )
-
-            currentLocationTask.addOnCompleteListener { task: Task<Location> ->
-                val result = if (task.isSuccessful && task.result != null) {
-                    val result: Location = task.result
-                    "Location (success): ${result.latitude}, ${result.longitude}"
-                    viewModel.getWeatherData(null, MySharedPreferences.getDegree().toString(), result.latitude.toString(), result.longitude.toString())
-                } else {
-                    val exception = task.exception
-                    "Location (failure): $exception"
-                }
-
-                Log.d(ConstantsUrls.TAG, "getCurrentLocation() result: $result")
-            }
-        }
-    }
 
     private fun locationEnabled() {
         Log.d("test2", "ss")
@@ -296,4 +290,6 @@ class MainActivity : AppCompatActivity() {
                     .show()
         }
     }
+
+
 }

@@ -20,6 +20,8 @@
     <string name="fine_location_permission_rationale">The fine location permission is needed for getting weather data.</string>
     <string name="fine_permission_denied_explanation">Fine location permission was denied but is needed getting weather datay.</string>
     <string name="permission_approved_explanation">You approved location.</string>
+    <string name="input_required">Input required</string>
+
 
 
 </resources>

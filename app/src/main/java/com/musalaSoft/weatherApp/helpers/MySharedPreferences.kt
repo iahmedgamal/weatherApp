@@ -17,9 +17,9 @@ class MySharedPreferences {
             mAppContext = context
         }
 
-//        fun check(): Context? {
-//            return mAppContext
-//        }
+        fun check(): Context? {
+            return mAppContext
+        }
 
         private fun getSharedPreferences(): SharedPreferences? {
             return mAppContext?.getSharedPreferences(
