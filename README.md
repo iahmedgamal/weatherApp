@@ -41,5 +41,7 @@ main feature:
     screenshots
 
 ![image](https://i.postimg.cc/bNt9bMVC/Screenshot-20210225-122638-Copy.jpg)
+![image](https://i.postimg.cc/BvMT4Gt6/Screenshot-20210225-122705.jpg)
+![image](https://i.postimg.cc/6pxLh0D9/Screenshot-20210225-122648.jpg)
 
 
