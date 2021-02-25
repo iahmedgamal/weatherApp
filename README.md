@@ -1,7 +1,7 @@
 # weatherApp
 
 
-main feature:
+main features:
 - user can search with city name to get weather data about this city 
 - user can get weather data by accessing GPS 
 - user can change degree from Celsius to Fahrenheit by using top menu
