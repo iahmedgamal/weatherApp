@@ -15,12 +15,12 @@ main feature:
 
 # Tools & libraries 
 
-Language: Kotlin
-Design pattern : MVVM 
-LiveData
-Goole maps GPS checker dialog 
-https://openweathermap.org/api to get the weather data
-https://openweathermap.org/current   by query & By geographic coordinates
+-Language: Kotlin
+-Design pattern : MVVM 
+-LiveData
+-Goole maps GPS checker dialog 
+-https://openweathermap.org/api to get the weather data
+-https://openweathermap.org/current   by query & By geographic coordinates
 
 
 
