@@ -7,7 +7,7 @@ main feature:
 - user can change degree from Celsius to Fahrenheit by using top menu
 - Weather data (city degree - pressure - feels like )
 
-#: Live Demo:
+# Live Demo:
 
     https://drive.google.com/file/d/1SRniMyT_zq-D6hxbPSA0GkhviO0RfFmR/view?usp=sharing
     
