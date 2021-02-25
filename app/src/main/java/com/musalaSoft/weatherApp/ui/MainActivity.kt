@@ -1,11 +1,15 @@
-package com.musalaSoft.weatherApp
+package com.musalaSoft.weatherApp.ui
 
 import Base
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -16,30 +20,26 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.viewbinding.BuildConfig
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.tasks.Task
 import com.google.android.material.snackbar.Snackbar
+import com.musalaSoft.weatherApp.R
+import com.musalaSoft.weatherApp.databinding.ActivityMainBinding
 import com.musalaSoft.weatherApp.helpers.ConstantsUrls
 import com.musalaSoft.weatherApp.helpers.MySharedPreferences
 import com.musalaSoft.weatherApp.helpers.hasPermission
 import com.musalaSoft.weatherApp.helpers.requestPermissionWithRationale
-import com.musalaSoft.weatherApp.network.APIInterface
-import com.musalaSoft.weatherApp.network.ApiClient
 import kotlinx.android.synthetic.main.activity_main.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import com.musalaSoft.weatherApp.databinding.ActivityMainBinding
-import androidx.databinding.DataBindingUtil
 
 
 class MainActivity : AppCompatActivity() {
-    private var service: ApiClient? = null
     private lateinit var binding: com.musalaSoft.weatherApp.databinding.ActivityMainBinding
+    private lateinit var viewModel: MainViewModel
 
     // The Fused Location Provider provides access to location APIs.
     private val fusedLocationClient: FusedLocationProviderClient by lazy {
@@ -47,7 +47,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Allows class to cancel the location request if it exits the activity.
-    // Typically, you use one cancellation source per lifecycle.
     private var cancellationTokenSource = CancellationTokenSource()
 
     // If the user denied a previous permission request, but didn't check "Don't ask again", this
@@ -68,61 +67,42 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
-
-//        binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
 
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+        viewModel.getWeatherSuccessResponse.observe(this, Observer<Base> { weatherData ->
+            // Update the UI from MainViewModel
+            if (weatherData != null) {
+                Log.d("ss", weatherData.toString())
+                degreeTV.text = weatherData.main.temp.toString()
+                MySharedPreferences.setLastResponse(weatherData.name)
+                degreeTV.text = weatherData.main.temp.toString()
+                description_tv.text = weatherData.weather[0].description
+                feels_like_value_tv.text = weatherData.main.feels_like.toString()
+                pressure_value_tv.text = weatherData.main.pressure.toString()
+
+                search_et.setText(weatherData.name.toString())
+            }
+        })
+
         setSharedPreferences()
         initSharedPrefrences()
-        search_btn.setOnClickListener(){
-           val city=  search_et.text.toString()
-            search(city,MySharedPreferences.getDegree().toString())
-        }
 
+        // search button click
+        search_btn.setOnClickListener() {
+            val city = search_et.text.toString()
+            // get weather data from MainViewModel
+            viewModel.getWeatherData(city, MySharedPreferences.getDegree().toString(), null, null)
+        }
         locationRequestOnClick(view)
 
     }
 
-
-
-    private fun search(city:String, unit:String){
-        //    For temperature in Fahrenheit use units=imperial
-        //    For temperature in Celsius use units=metric
-        val apiService = ApiClient.client.create(APIInterface::class.java)
-        val call= apiService.getWeather(city, ConstantsUrls.APP_ID,unit)
-        // call weather API
-        call.enqueue(object : Callback<Base>{
-            override fun onFailure(call: Call<Base>, t: Throwable) {
-                Log.d("Throwable",t.toString())
-
-            }
-            override fun onResponse(call: Call<Base>, response: Response<Base>) {
-                Log.d("response",response.toString())
-                if (response.code() == 200 ) {
-                    Log.d("response", response.body()!!.toString())
-                    val finalResponse =  response.body()!!
-                    MySharedPreferences.setLastResponse(finalResponse.name)
-
-                    degreeTV.text =  finalResponse.main.temp.toString()
-                    description_tv.text = finalResponse.weather[0].description
-                    feels_like_value_tv.text =  finalResponse.main.feels_like.toString()
-                    pressure_value_tv.text =  finalResponse.main.pressure.toString()
-                }
-            }
-
-        })
-    }
-
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu to use in the action bar
-
         val inflater = menuInflater
         inflater.inflate(R.menu.menu, menu)
         return super.onCreateOptionsMenu(menu)
@@ -131,24 +111,24 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.celsius -> {
-                val city=  search_et.text.toString()
+                val city = search_et.text.toString()
                 MySharedPreferences.setDegree("metric")
-                search(city,"metric")
+                viewModel.getWeatherData(city, "metric", null, null)
+
                 return true
             }
             R.id.fahrenheit -> {
-                val city=  search_et.text.toString()
+                val city = search_et.text.toString()
                 MySharedPreferences.setDegree("imperial")
-                search(city,"imperial")
+                viewModel.getWeatherData(city, "imperial", null, null)
+
                 return true
             }
-
 
         }
         return super.onOptionsItemSelected(item)
     }
 
-    //init sharedPreferences
     fun setSharedPreferences() {
         Log.d("init", "init SharedPreferences")
         MySharedPreferences.setContext(getApplicationContext())
@@ -163,19 +143,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initSharedPrefrences() {
-        if(MySharedPreferences.getDegree().toString()!=""){
+        if (MySharedPreferences.getDegree().toString() != "") {
             var city = MySharedPreferences.getLastResponse().toString()
-            search(city,MySharedPreferences.getDegree().toString())
-            search_et.setText(city)
         }
     }
-
 
 
     override fun onStop() {
         super.onStop()
         // Cancels location request (if in flight).
         cancellationTokenSource.cancel()
+    }
+
+
+    override fun onResume() {
+        super.onResume()
+        val permissionApproved =
+                applicationContext.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+
+        if (permissionApproved) {
+            requestCurrentLocation()
+
+            //check if user's GPS is opened
+            locationEnabled()
+        }
+
+
     }
 
     override fun onRequestPermissionsResult(
@@ -212,7 +205,7 @@ class MainActivity : AppCompatActivity() {
                                 intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
                                 val uri = Uri.fromParts(
                                         "package",
-                                        BuildConfig.LIBRARY_PACKAGE_NAME,
+                                        packageName,
                                         null
                                 )
                                 intent.data = uri
@@ -244,12 +237,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Gets current location.
-     * Note: The code checks for permission before calling this method, that is, it's never called
-     * from a method with a missing permission. Also, I include a second check with my extension
-     * function in case devs just copy/paste this code.
-     */
+
     @SuppressLint("MissingPermission")
     private fun requestCurrentLocation() {
         Log.d(ConstantsUrls.TAG, "requestCurrentLocation()")
@@ -274,24 +262,38 @@ class MainActivity : AppCompatActivity() {
                 val result = if (task.isSuccessful && task.result != null) {
                     val result: Location = task.result
                     "Location (success): ${result.latitude}, ${result.longitude}"
+                    viewModel.getWeatherData(null, MySharedPreferences.getDegree().toString(), result.latitude.toString(), result.longitude.toString())
                 } else {
                     val exception = task.exception
                     "Location (failure): $exception"
                 }
 
                 Log.d(ConstantsUrls.TAG, "getCurrentLocation() result: $result")
-                logOutputToScreen(result)
             }
         }
     }
 
-    private fun logOutputToScreen(outputString: String) {
-        val finalOutput = binding.outputTextView.text.toString() + "\n" + outputString
-        binding.outputTextView.text = finalOutput
+    private fun locationEnabled() {
+        Log.d("test2", "ss")
+        val lm: LocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        var gps_enabled = false
+        var network_enabled = false
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+        if (!gps_enabled && !network_enabled) {
+            AlertDialog.Builder(this@MainActivity)
+                    .setMessage("GPS Enable")
+                    .setPositiveButton("Settings") { dialog, which -> startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)); }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+        }
     }
-
-
-
-
-
 }
