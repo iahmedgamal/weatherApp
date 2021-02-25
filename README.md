@@ -24,7 +24,7 @@ main feature:
 
 
 
-#: Required Dependencies:
+# Required Dependencies:
     def lifecycle_version = "2.2.0"
    - implementation 'com.squareup.retrofit2:retrofit:2.9.0' // API calling
    - implementation 'com.google.code.gson:gson:2.8.6'  // JSON parsing
